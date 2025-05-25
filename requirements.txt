@@ -1,13 +1,10 @@
 aac_datasets==0.5.2
 ffmpeg==1.4
 ffmpeg_python==0.2.0
-# hear21passt==0.0.26  # Remove this line
 librosa==0.11.0
 lightning==2.5.0.post0
 pandas==2.2.3
 tqdm==4.67.1
-transformers==4.49.0  # Pin to avoid conflicts
+transformers==4.49.0
 wandb==0.19.8
-fairseq==0.12.2
-torch>=1.12.0,<2.0.0  # Pin torch version to avoid fairseq conflicts
-torchaudio>=0.12.0,<2.0.0
+torchaudio

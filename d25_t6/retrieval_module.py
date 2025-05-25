@@ -1,7 +1,7 @@
 import copy
 import math
 import string
-from typing import Any, Optional
+from typing import Any
 import os
 import ast
 import pandas as pd
@@ -10,58 +10,61 @@ import torch
 from lightning import pytorch as pl
 from transformers import RobertaTokenizer, RobertaModel
 
-from d25_t6.beats import CutInputIntoSegmentsWrapper, BEATsNoOverlapWrapper
+from d25_t6.beats import BEATsWrapper
+from d25_t6.passt import CutInputIntoSegmentsWrapper
 
 
 class AudioRetrievalModel(pl.LightningModule):
 
     def __init__(
             self,
-            beats_model_path: Optional[str] = None,  # Add this parameter
             **kwargs
     ):
 
         super().__init__()
         self.save_hyperparameters(kwargs)
 
-        # audio encoder - Replace PaSST with BEATs
+        # audio encoder
         self.audio_embedding_model = CutInputIntoSegmentsWrapper(
-            BEATsNoOverlapWrapper(beats_model_path),
+            BEATsWrapper(
+                checkpoint_path=kwargs['beats_ckpt_path']
+            ),
             max_input_length=10*32000,
             segment_length=10*32000,
             hop_size=10*32000
         )
-        self.audio_projection = torch.nn.Linear(768, 1024)  # BEATs also outputs 768-dim features
+        self.audio_projection = torch.nn.Linear(768, 1024)
 
-        # text encoder (unchanged)
+        # text encoder
         self.tokenizer = RobertaTokenizer.from_pretrained('roberta-large')
         self.text_embedding_model = RobertaModel.from_pretrained(
-            'roberta-base' if kwargs.get('roberta_base', False) else 'roberta-large',
+            'roberta-base' if kwargs['roberta_base'] else 'roberta-large',
             add_pooling_layer=False,
             hidden_dropout_prob=0.2,
             attention_probs_dropout_prob=0.2,
             output_hidden_states=False
         )
-        self.text_projection = torch.nn.Linear(768 if kwargs.get('roberta_base', False) else 1024, 1024)
+        self.text_projection = torch.nn.Linear(768 if kwargs['roberta_base'] else 1024, 1024)
 
         # temperature parameter
-        initial_tau = torch.zeros((1,)) + kwargs.get('initial_tau', 0.05)
-        self.tau = torch.nn.Parameter(initial_tau, requires_grad=kwargs.get('tau_trainable', False))
+        initial_tau = torch.zeros((1,)) + kwargs['initial_tau']
+        self.tau = torch.nn.Parameter(initial_tau, requires_grad=kwargs['tau_trainable'])
 
         self.validation_outputs = []
+
         self.kwargs = kwargs
+
         self.compile_model()
 
     def compile_model(self):
         """Apply torch.compile() if GPU is recent"""
-        if torch.cuda.is_available() and self.kwargs.get('compile', False):
-            device = torch.cuda.current_device()
+        if torch.cuda.is_available():
+            device = torch.cuda.current_device()  # Get current GPU device
             properties = torch.cuda.get_device_properties(device)
-            if properties.major >= 7:
+            if properties.major >= 7 and self.kwargs['compile'] == True:
                 print("Compiling Models")
                 self.text_embedding_model = torch.compile(self.text_embedding_model)
-                # Don't compile BEATs model as it may cause issues with fairseq
-
+                self.audio_embedding_model.model.model = torch.compile(self.audio_embedding_model.model.model)
 
     def forward(self, batch) -> Any:
 

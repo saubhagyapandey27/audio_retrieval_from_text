@@ -159,15 +159,6 @@ def get_args() -> dict:
     parser.add_argument('--initial_tau', type=float, default=0.05, help='Initial tau value')
     parser.add_argument('--tau_trainable', default=False, action=argparse.BooleanOptionalAction, help='Temperature parameter is trainable or not.')
 
-    
-    # BEATs parameters (replace PaSST parameters)
-    parser.add_argument('--beats_model_path', type=str, 
-                       default=None,  # Will use default path if None
-                       help='Path to the BEATs checkpoint file')
-    # PaSST parameters
-    # parser.add_argument('--s_patchout_t', type=int, default=15, help='Temporal patchout size')
-    # parser.add_argument('--s_patchout_f', type=int, default=2, help='Frequency patchout size')
-
     # RoBERTa parameters
     parser.add_argument('--roberta_base', default=False, action=argparse.BooleanOptionalAction,  help='Use Roberta base or large.')
 
@@ -183,6 +174,9 @@ def get_args() -> dict:
     # run training / test
     parser.add_argument('--train', default=True, action=argparse.BooleanOptionalAction, help='Run training or not.')
     parser.add_argument('--test', default=True, action=argparse.BooleanOptionalAction, help='Run testing or not.')
+
+    # PaSST parameters
+    parser.add_argument('--beats_ckpt_path', type=str, required=True, help='Path to BEATs fine-tuned checkpoint (AS2M, cpt2).')
 
     args = parser.parse_args()
     return vars(args)

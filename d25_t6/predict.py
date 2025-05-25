@@ -1,7 +1,7 @@
 import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.functional")
-warnings.filterwarnings("ignore", category=FutureWarning, module="fairseq")
+warnings.filterwarnings("ignore", category=FutureWarning, module="hear21passt.models.preprocess")
 
 import librosa
 from collections import defaultdict
@@ -82,6 +82,7 @@ def get_args() -> dict:
 
     # Parameter initialization & resume training
     parser.add_argument('--load_ckpt_path', type=str, default=None, required=True, help='Path to checkpoint.')
+    parser.add_argument('--beats_ckpt_path', type=str, required=True, help='Path to BEATs fine-tuned checkpoint (AS2M, cpt2).')
 
     parser.add_argument('--retrieval_audio_path', type=str, default='../data/predict/retrieval_audio', help='Path to items to be retrieved.')
     parser.add_argument('--retrieval_captions', type=str, default='../data/predict/retrieval_captions.csv', help='Path to CSV containing the queries.')

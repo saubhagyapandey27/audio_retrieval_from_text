@@ -26,7 +26,7 @@ This repository contains the code for the baseline system of the DCASE 2025 Chal
 * The training loop is implemented using [PyTorch](https://pytorch.org/) and [PyTorch Lightning](https://lightning.ai/). 
 * Logging is implemented using [Weights and Biases](https://wandb.ai/site). 
 * The architecture of the baseline system is based on the top-ranked system of [Task 8 in the DCASE 2024 challenge](https://dcase.community/challenge2024/task-language-based-audio-retrieval-results).
-* It uses the [Patch out Fast Spectrogram Transformer](https://arxiv.org/abs/2110.05069) (PaSST) and [RoBERTa](https://arxiv.org/abs/1907.11692)-large to encode audio recordings and text-queries.
+* It uses the [Fine-tuned BEATs_iter3+ (AS2M) (cpt2) model](https://github.com/microsoft/unilm/tree/master/beats) for audio encoding and [RoBERTa](https://arxiv.org/abs/1907.11692)-large for text encoding.
 * Datasets are loaded via [aac-datasets](https://github.com/Labbeti/aac-datasets).
 
 ## Getting Started
@@ -70,12 +70,14 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 # for otther versions see: https://pytorch.org/get-started/locally/
 ```
 
-5. Install other dependencies:
+5. Download the Fine-tuned BEATs_iter3+ (AS2M) (cpt2) checkpoint and provide its path via --beats_ckpt_path when running training or prediction. See the [BEATs repo](https://github.com/microsoft/unilm/tree/master/beats) for details.
+
+6. Install other dependencies:
 ```
 pip3 install -r requirements.txt
 ```
 
-6. If you have not used [Weights and Biases](https://wandb.ai/site) for logging before, you can create a free account. On your
+7. If you have not used [Weights and Biases](https://wandb.ai/site) for logging before, you can create a free account. On your
 machine, run ```wandb login``` and copy your API key from [this](https://wandb.ai/authorize) link to the command line.
 
 ## Run Experiments
@@ -106,24 +108,24 @@ The training procedure can be started on a by running the following command:
 
 **NVIDA A40** 
 ```
-python -m d25_t6.train --compile --data_path=data --seed=13
+python -m d25_t6.train --compile --data_path=data --seed=13 --beats_ckpt_path=PATH_TO_BEATS_CKPT.pt
 ```
 
 **NVIDIA 2080Ti**
 ```
-python -m d25_t6.train --data_path=data --batch_size=4 --batch_size_eval=4 --no-compile --max_lr=5e-6 --seed=13
+python -m d25_t6.train --data_path=data --batch_size=4 --batch_size_eval=4 --no-compile --max_lr=5e-6 --seed=13 --beats_ckpt_path=PATH_TO_BEATS_CKPT.pt
 ```
 
 Running the training script automatically downloads the ClothoV2.1 dataset into the folder specified in `--data_path`
 
 To include AudioCaps in the training use (data will be downloaded automatically):
 ```
-python -m d25_t6.train --audiocaps --data_path=data --seed=492412 --compile --no-tau_trainable
+python -m d25_t6.train --audiocaps --data_path=data --seed=492412 --compile --no-tau_trainable --beats_ckpt_path=PATH_TO_BEATS_CKPT.pt
 ```
 
 To include AudioCaps and WavCaps in training use (data will be downloaded automatically):
 ```
-python -m d25_t6.train --audiocaps --wavcaps --data_path=data --seed=967251 --compile --no-tau_trainable
+python -m d25_t6.train --audiocaps --wavcaps --data_path=data --seed=967251 --compile --no-tau_trainable --beats_ckpt_path=PATH_TO_BEATS_CKPT.pt
 ```
 
 Use options `--no-train --no-test` to just download the data sets.
@@ -143,6 +145,7 @@ The table below also provides the recall at 1, 5 and 10.
 |            **Clotho, AudioCaps** | 32.85                        | 30.97      | 19.56      | 46.45   | 59.48    | NVIDIA A40         | 7h 16m       |
 | **Clotho, AudioCaps, WavCaps**   | 38.01                        | 35.23      | 23.29      | 52.17   | 64.78    | NVIDIA A40         | 34h 44m      |
 
+A checkpoint of the model trained on Clotho, AudioCaps, WavCaps is available [here](https://cloud.cp.jku.at/index.php/s/6ZTQ3mcwk9AAS4i).
 
 ### Create Predictions
 
@@ -152,7 +155,8 @@ python -m d25_t6.predict \
 --load_ckpt_path=PATH_OF_CHECKPOINT_FILE.ckpt \
 --retrieval_audio_path=PATH_OF_FOLDER_CONTAINING_AUDIOS \
 --retrieval_captions=PATH_OF_CSV_LISTING_QUERIS.csv \
---predictions_path=PATH_TO_WHERE_PREDICTIONS_WILL_BE_STORED
+--predictions_path=PATH_TO_WHERE_PREDICTIONS_WILL_BE_STORED \
+--beats_ckpt_path=PATH_TO_BEATS_CKPT.pt
 ```
 # Citation
 If you use this repository, cite our related paper:
