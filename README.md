@@ -38,7 +38,7 @@ Prerequisites
 1. Clone this repository.
 
 ```
-git clone https://github.com/CPJKU/dcase2025_task6_baseline.git
+git clone https://github.com/saubhagyapandey27/audio_retrieval_from_text
 ```
 
 2. Create and activate a conda environment with Python 3.11:
