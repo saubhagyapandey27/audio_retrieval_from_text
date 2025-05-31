@@ -13,7 +13,7 @@ def custom_loading(dataset: aac_datasets.datasets.base.AACDataset, normalize_aud
     Uses custom data loading to a dataset:
     - Loads a 30s snippet from a longer audio file efficiently.
     - Pads shorter audios to 30s automatically.
-    - Resamples audios to 32kHz.
+    - Resamples audios to 16kHz.
 
     Args:
         dataset (aac_datasets.datasets.base.AACDataset): The dataset to which transformations will be applied.
@@ -33,30 +33,8 @@ def custom_transform(sample: dict):
     Custom audio padding logic.
     """
     sample['duration'] = sample['audio'].shape[-1] / sample['sr']
-    sample['audio'] = _pad_or_subsample_audio(sample['audio'], 32000 * 30)
+    sample['audio'] = _pad_or_subsample_audio(sample['audio'], 16000 * 30)
     return sample
-
-def _custom_load_audio(self, index: int) -> Tensor:
-    """
-    WARNING: THIS FUNCTION DOES NOT YIELD THE EXPECTED RESULTS – SOMETHING'S WRONG WITH LOADING .FLAC FILES.
-    LET ME KNOW IF YOU FIND THE ISSUE...
-
-    USE _custom_load_audio_mp3 INSTEAD!
-
-    Custom audio loading logic.
-    """
-    fpath = self.at(index, "fpath")
-
-    # load segment; truncate to 30 if longer than 30s
-    audio, sr = _load_random_segment_ffmpeg(fpath, sample_rate=32000)  # type: ignore
-
-    # Sanity check
-    if audio.nelement() == 0:
-        raise RuntimeError(
-            f"Invalid audio number of elements in {fpath}. (expected audio.nelement()={audio.nelement()} > 0)"
-        )
-
-    return audio
 
 
 def _custom_load_audio_mp3(self, index: int) -> Tensor:
@@ -75,10 +53,10 @@ def _custom_load_audio_mp3(self, index: int) -> Tensor:
 
     if extension == "mp3":
         # load audiocaps and wavcaps with ffmpeg
-        audio, sr = _load_random_segment_ffmpeg(fpath, sample_rate=32000)  # type: ignore
+        audio, sr = _load_random_segment_ffmpeg(fpath, sample_rate=16000)  # type: ignore
     elif extension == "wav":
         # load clotho files with librosa, no subsampling required because all clotho files <= 30s
-        audio, sr = librosa.load(fpath, sr=32000, mono=True)
+        audio, sr = librosa.load(fpath, sr=16000, mono=True)
         audio = torch.tensor(audio).unsqueeze(0)
 
     # Sanity check
@@ -123,7 +101,7 @@ def _custom_load_metadata(self, index: int) -> dict:
     # just a placeholder...
     return dotdict(dict(
         duration = -1,
-        sample_rate = int(32000),
+        sample_rate = int(16000),
         channels = int(1),
         num_frames = int(-1)
     ))
@@ -132,14 +110,14 @@ def _custom_load_metadata(self, index: int) -> dict:
 def _load_random_segment_ffmpeg(
         file_path: str,
         segment_duration: int = 30,
-        sample_rate: int = 32000
+        sample_rate: int = 16000
 ) -> tuple[Tensor, int]:
     """
     Efficiently extracts a random 30-second segment from an audio file using ffmpeg without loading the full file.
 
     :param file_path: Path to the audio file
     :param segment_duration: Segment duration in seconds (default: 30s)
-    :param sample_rate: Sample rate for extracted audio (default: 32kHz)
+    :param sample_rate: Sample rate for extracted audio (default: 16kHz)
     :return: PyTorch tensor of extracted audio and sample rate
     """
     try:

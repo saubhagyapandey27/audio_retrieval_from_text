@@ -29,9 +29,9 @@ class AudioRetrievalModel(pl.LightningModule):
             BEATsWrapper(
                 checkpoint_path=kwargs['beats_ckpt_path']
             ),
-            max_input_length=10*32000,
-            segment_length=10*32000,
-            hop_size=10*32000
+            max_input_length=10*16000,
+            segment_length=10*16000,
+            hop_size=10*16000
         )
         self.audio_projection = torch.nn.Linear(768, 1024)
 
@@ -75,21 +75,35 @@ class AudioRetrievalModel(pl.LightningModule):
         return audio_embeddings, text_embeddings
 
     def forward_audio(self, batch):
-
-        audio_embeddings = self.audio_embedding_model(batch['audio'].mean(1)) # forward
+        print(f"Input audio shape: {batch['audio'].shape}")
+        print(f"Input durations: {batch['duration']}")
+        
+        audio_input = batch['audio'].mean(1)
+        print(f"Audio input to model shape: {audio_input.shape}")
+        
+        audio_embeddings = self.audio_embedding_model(audio_input)
+        print(f"Audio embeddings shape from model: {audio_embeddings.shape}")
 
         # mask embeddings from padded empty audio parts
         aggregated = []
         for i, duration in enumerate(batch['duration']):
             if duration <= 10:
-                aggregated.append(audio_embeddings[i, 0])
+                emb = audio_embeddings[i, 0]
+                print(f"Duration {duration:.2f}s, using first segment, shape: {emb.shape}")
+                aggregated.append(emb)
             elif duration <= 20:
-                aggregated.append(audio_embeddings[i, :2].mean(-2))
+                emb = audio_embeddings[i, :2].mean(-2)
+                print(f"Duration {duration:.2f}s, using first 2 segments, shape: {emb.shape}")
+                aggregated.append(emb)
             else:
-                aggregated.append(audio_embeddings[i].mean(-2))
+                emb = audio_embeddings[i].mean(-2)
+                print(f"Duration {duration:.2f}s, using all segments, shape: {emb.shape}")
+                aggregated.append(emb)
 
         audio_embeddings = torch.stack(aggregated)
-        audio_embeddings = self.audio_projection(audio_embeddings) # project to same dimension
+        print(f"Stacked embeddings shape: {audio_embeddings.shape}")
+        
+        audio_embeddings = self.audio_projection(audio_embeddings)
         audio_embeddings = torch.nn.functional.normalize(audio_embeddings, p=2, dim=-1) # normalize
         return audio_embeddings
 

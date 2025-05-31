@@ -39,10 +39,10 @@ def predict(
     audio_embeddings = {}
     with torch.no_grad():
         for f in tqdm(audio_file_paths, desc="Embedding audio files..."):
-            audio, sr = librosa.load(f, sr=32000)
+            audio, sr = librosa.load(f, sr=16000)
             duration = [len(audio) / sr]
             audio = torch.tensor(audio).unsqueeze(0)
-            audio = _pad_or_subsample_audio(audio, max_length=32000*30)
+            audio = _pad_or_subsample_audio(audio, max_length=16000*30)
             audio = audio.cuda() if torch.cuda.is_available() else audio
             audio_embeddings[f] = model.forward_audio({
                 'audio': audio.unsqueeze(0),
