@@ -68,7 +68,7 @@ def train(
         logger=logger if wandb.run else None,
         callbacks=[checkpoint_callback],
         max_epochs=args['max_epochs'],
-        precision="16-mixed",
+        precision=args['precision'],
         num_sanity_val_steps=0,
         fast_dev_run=False
     )
@@ -112,7 +112,7 @@ def test(
         logger=logger if wandb.run else None,
         callbacks=None,
         max_epochs=args['max_epochs'],
-        precision="16-mixed",
+        precision=args['precision'],
         num_sanity_val_steps=0,
         fast_dev_run=False
     )
@@ -158,6 +158,7 @@ def get_args() -> dict:
     parser.add_argument('--min_lr', type=float, default=1e-7, help='Minimum learning rate')
     parser.add_argument('--initial_tau', type=float, default=0.05, help='Initial tau value')
     parser.add_argument('--tau_trainable', default=False, action=argparse.BooleanOptionalAction, help='Temperature parameter is trainable or not.')
+    parser.add_argument('--precision', type=str, default='16-mixed', help='Training precision (32, 16-mixed, bf16-mixed)')
 
     # RoBERTa parameters
     parser.add_argument('--roberta_base', default=False, action=argparse.BooleanOptionalAction,  help='Use Roberta base or large.')
